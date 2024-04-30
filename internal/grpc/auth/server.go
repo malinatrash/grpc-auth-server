@@ -4,16 +4,12 @@ import (
 	"context"
 	"errors"
 	ssov1 "github.com/malinatrash/grpc-auth-protos/gen/go/sso"
+	"github.com/malinatrash/grpc-auth-server/internal/lib/validation"
 	"github.com/malinatrash/grpc-auth-server/internal/services/auth"
 	"github.com/malinatrash/grpc-auth-server/internal/services/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
-
-const (
-	emptyValue  = 0
-	emptyString = ""
 )
 
 type Auth interface {
@@ -32,7 +28,7 @@ func Register(gRPC *grpc.Server, auth Auth) {
 }
 
 func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.LoginResponse, error) {
-	if err := validateLogin(req); err != nil {
+	if err := validation.ValidateLogin(req); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +46,7 @@ func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 }
 
 func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*ssov1.RegisterResponse, error) {
-	if err := validateRegister(req); err != nil {
+	if err := validation.ValidateRegister(req); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +62,7 @@ func (s *serverAPI) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 }
 
 func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ssov1.IsAdminResponse, error) {
-	if err := validateIsAdmin(req); err != nil {
+	if err := validation.ValidateIsAdmin(req); err != nil {
 		return nil, err
 	}
 
@@ -79,38 +75,4 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 	}
 
 	return &ssov1.IsAdminResponse{IsAdmin: isAdmin}, nil
-}
-
-func validateEmailAndPassword(email string, password string) error {
-	if email == emptyString {
-		return status.Error(codes.InvalidArgument, "email is required")
-	}
-	if password == emptyString {
-		return status.Error(codes.InvalidArgument, "password is required")
-	}
-	return nil
-}
-
-func validateLogin(req *ssov1.LoginRequest) error {
-	if err := validateEmailAndPassword(req.GetEmail(), req.GetPassword()); err != nil {
-		return err
-	}
-	if req.AppId == emptyValue {
-		return status.Error(codes.InvalidArgument, "app_id is required")
-	}
-	return nil
-}
-
-func validateRegister(req *ssov1.RegisterRequest) error {
-	if err := validateEmailAndPassword(req.GetEmail(), req.GetPassword()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func validateIsAdmin(req *ssov1.IsAdminRequest) error {
-	if req.UserId == emptyValue {
-		return status.Error(codes.InvalidArgument, "user_id is required")
-	}
-	return nil
 }
